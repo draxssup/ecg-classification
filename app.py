@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify
 import tensorflow as tf
 import numpy as np
 from PIL import Image
@@ -7,18 +7,14 @@ import os
 app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
 MODEL_PATH = os.path.join("model", "saved_model")
-
-# Load the SavedModel format model
 loaded_model = tf.saved_model.load(MODEL_PATH)
 inference_func = loaded_model.signatures["serving_default"]
-
-# Print the input signature to confirm correct shape
-print("Model expects:", inference_func.structured_input_signature)
+#print("Model expects:", inference_func.structured_input_signature)
 
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+@app.route("/", methods=["GET", "HEAD"])
+def health_check():
+    return jsonify({"status": "ECG model server is live"}), 200
 
 
 @app.route("/predict", methods=["POST"])
@@ -37,7 +33,7 @@ def predict():
         file.save(filepath)
         print(f"File saved to {filepath}")
 
-        # Resize image to match model input (256x182 RGB)
+        # Resize to model input (256x182 RGB)
         img = Image.open(filepath).convert("RGB").resize((256, 182))  # W x H
         img_array = np.array(img) / 255.0
         img_array = np.expand_dims(img_array, axis=0)  # (1, 182, 256, 3)
@@ -75,5 +71,5 @@ def predict():
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # <-- Dynamic port for Render
+    port = int(os.environ.get("PORT", 5000)
     app.run(host="0.0.0.0", port=port)
